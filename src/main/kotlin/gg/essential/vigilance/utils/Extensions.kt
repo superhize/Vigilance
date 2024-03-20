@@ -15,6 +15,7 @@ import gg.essential.elementa.state.State
 import gg.essential.elementa.utils.withAlpha
 import gg.essential.universal.UMouse
 import gg.essential.universal.UResolution
+import gg.essential.vigilance.data.PropertyData
 import gg.essential.vigilance.gui.VigilancePalette
 import java.awt.Color
 import kotlin.reflect.KProperty
@@ -252,6 +253,7 @@ internal operator fun <T> State<T>.setValue(obj: Any, property: KProperty<*>, va
 
 internal fun <T> T.state() = BasicState(this)
 
+internal fun PropertyData.translate(key: String) = this.instance.i18nProvider.translate(key)
 internal fun <T> UIComponent.pollingState(initialValue: T? = null, getter: () -> T): State<T> {
     val state = BasicState(initialValue ?: getter())
     enableEffect(object : Effect() {
