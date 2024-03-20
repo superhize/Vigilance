@@ -7,6 +7,7 @@ plugins {
     id("org.jetbrains.kotlinx.binary-compatibility-validator") version "0.8.0"
     id("org.jetbrains.dokka") version "1.6.10" apply false
     id("gg.essential.defaults")
+    id("maven-publish")
 }
 
 kotlin.jvmToolchain {
