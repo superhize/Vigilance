@@ -170,6 +170,34 @@ object ExampleConfig : Vigilant(File("./config/example.toml"), i18nProvider = Ex
     var dependant: String = "hey"
 
     @Property(
+        type = PropertyType.TEXT,
+        name = "Inverted",
+        description = "This setting only shows when Switch with dependants toggle is false",
+        category = "Property Deep-Dive",
+        subcategory = "Dependencies"
+    )
+    var inverted = "hi"
+
+    @Property(
+        type = PropertyType.SELECTOR,
+        name = "Selector with dependants",
+        description = "When Show is selected, this selector will make the Value Dependant setting appear",
+        category = "Property Deep-Dive",
+        subcategory = "Dependencies",
+        options = ["Show", "Hide", "Also Hide"]
+    )
+    var selectorDependency = 0
+
+    @Property(
+        type = PropertyType.TEXT,
+        name = "Value Dependant",
+        description = "This setting only shows when Selector with dependants is set to Show",
+        category = "Property Deep-Dive",
+        subcategory = "Dependencies",
+    )
+    var valueDependant = "Fancy"
+
+    @Property(
         type = PropertyType.SWITCH,
         name = "Initially off switch",
         description = "Switch that starts in the off position",
@@ -570,6 +598,8 @@ object ExampleConfig : Vigilant(File("./config/example.toml"), i18nProvider = Ex
         addDependency(clazz.getDeclaredField("dependant"), clazz.getDeclaredField("dependency"))
         addDependency(clazz.getDeclaredField("propertyPete"), clazz.getDeclaredField("toggleTom"))
         addDependency(clazz.getDeclaredField("checkboxChuck"), clazz.getDeclaredField("toggleTom"))
+        addDependency("valueDependant", "selectorDependency") { value: Int -> value == 0 }
+        addDependency("inverted", "dependency") { value: Boolean -> !value }
 
         val os = System.getProperty("os.name", "windows").lowercase()
         hidePropertyIf("windowsOnlyProperty") { !os.contains("windows") }

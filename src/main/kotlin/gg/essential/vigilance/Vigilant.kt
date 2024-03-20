@@ -5,10 +5,13 @@ import gg.essential.vigilance.data.*
 import gg.essential.vigilance.gui.SettingsGui
 import gg.essential.vigilance.i18n.I18nProvider
 import gg.essential.vigilance.i18n.PlatformI18nProvider
+import gg.essential.vigilance.impl.migrate
 import gg.essential.vigilance.impl.nightconfig.core.file.FileConfig
 import java.awt.Color
 import java.io.File
 import java.lang.reflect.Field
+import java.nio.file.FileAlreadyExistsException
+import java.nio.file.Files
 import java.util.function.Consumer
 import kotlin.concurrent.fixedRateTimer
 import kotlin.reflect.KClass
@@ -38,8 +41,46 @@ abstract class Vigilant(
         .map { it.apply { isAccessible = true } as KMutableProperty1<Vigilant, Any?> to it.findAnnotation<Data>()!! }
     */
 
-    private val fileConfig = FileConfig.of(file)
+    private val fileConfig = FileConfig.builder(file)
+        .onFileNotFound { f, c ->
+            // Make sure the parent folder always exists
+            Files.createDirectories(f.parent)
+            Files.createFile(f)
+            c.initEmptyFile(f)
+            false
+        }.build()
+
     private val categoryDescription = mutableMapOf<String, CategoryDescription>()
+
+    /**
+     * List of migrations to apply to the config file when it is loaded.
+     *
+     * Each entry in the list is a "migration" which should be a pure function that transforms a given old config
+     * to a newer format.
+     * The config is passed to the migration as a [MutableMap] of paths to arbitrary values.
+     * Each path consist of one or more parts joint by `.` characters.
+     * To get the path for a given property, join its category, (optionally) subcategory, and name with a `.`, lowercase
+     * everything and replace all spaces with `_` (other special characters are unaffected).
+     * E.g. `@Property(name = "My Fancy Setting", category = "General", subcategory = "Fancy Stuff")`
+     * becomes `general.fancy_stuff.my_fancy_setting`.
+     * See also [gg.essential.vigilance.data.fullPropertyPath].
+     *
+     * The config file keeps track of how many migrations have already been applied to it, so a migration will only be
+     * applied if it has not yet been applied.
+     * Note that for this to work properly, the list must effectively be treated as append-only. Removing or re-ordering
+     * migrations in the list will change their index and may cause them to be re-applied / other migrations to not be
+     * applied at all.
+     *
+     * The config file also keeps track of what changes each migration made and stores this information in the file,
+     * such that, if the mod is downgraded, it can roll back those changes.
+     * Note that this will only roll back things which have actually changed. If a new version of your mod adds a new
+     * option to a selector, and the user manually selects that option and then downgrades the mod, the old version
+     * will see that new index and likely error. If you wish to prevent this via the migrations/rollback system, you
+     * must artificially modify that setting in a migration (e.g. increase its value by 1) and then change it back to
+     * its actual value in a second migration (e.g. decrease its value again by 1).
+     */
+    protected open val migrations: List<Migration> = emptyList()
+
     private var dirty = false
     private var hasError = false
 
@@ -56,7 +97,6 @@ abstract class Vigilant(
      * Initialise your config.
      */
     fun initialize() {
-        Vigilance.initialize()
         loadData()
     }
 
@@ -145,19 +185,55 @@ abstract class Vigilant(
     fun <T> addDependency(property: KProperty<T>, dependency: KProperty<T>): Unit =
         addDependency(property.javaField!!, dependency.javaField!!)
 
-    fun addDependency(propertyName: String, dependencyName: String): Unit =
-        addDependency(propertyCollector.getProperty(propertyName)!!, propertyCollector.getProperty(dependencyName)!!)
+    fun addDependency(propertyName: String, dependencyName: String) {
+        checkBoolean(propertyCollector.getProperty(dependencyName)!!)
+        addDependency(propertyName, dependencyName) { value: Boolean -> value }
+    }
 
-    fun addDependency(field: Field, dependency: Field): Unit =
-        addDependency(propertyCollector.getProperty(field)!!, propertyCollector.getProperty(dependency)!!)
+    fun addDependency(field: Field, dependency: Field) {
+        checkBoolean(propertyCollector.getProperty(dependency)!!)
+        addDependency(field, dependency) { value: Boolean -> value }
+    }
 
-    private fun addDependency(property: PropertyData, dependency: PropertyData) {
-        if (dependency.getDataType() != PropertyType.SWITCH && dependency.getDataType() != PropertyType.CHECKBOX) {
-            error("Dependency must be a boolean PropertyType!")
-        }
+    fun <T> addDependency(propertyName: String, dependencyName: String, predicate: (value: T) -> Boolean): Unit =
+        addDependency(propertyCollector.getProperty(propertyName)!!, propertyCollector.getProperty(dependencyName)!!, predicate)
 
+    fun <T> addDependency(field: Field, dependency: Field, predicate: (value: T) -> Boolean): Unit =
+        addDependency(propertyCollector.getProperty(field)!!, propertyCollector.getProperty(dependency)!!, predicate)
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> addDependency(property: PropertyData, dependency: PropertyData, predicate: (value: T) -> Boolean) {
         property.dependsOn = dependency
         dependency.hasDependants = true
+        property.dependencyPredicate = { value -> predicate(value as T) }
+    }
+
+    @Deprecated(
+        message = "This method is deprecated, use addDependency with predicate instead.",
+        replaceWith = ReplaceWith("addDependency(propertyName, dependencyName) { value: Boolean -> !value }")
+    )
+    fun addInverseDependency(propertyName: String, dependencyName: String) {
+        addInverseDependency(propertyCollector.getProperty(propertyName)!!, propertyCollector.getProperty(dependencyName)!!)
+    }
+
+    @Deprecated(
+        message = "This method is deprecated, use addDependency with predicate instead.",
+        replaceWith = ReplaceWith("addDependency(field, dependency) { value: Boolean -> !value }")
+    )
+    fun addInverseDependency(field: Field, dependency: Field) {
+        addInverseDependency(propertyCollector.getProperty(field)!!, propertyCollector.getProperty(dependency)!!)
+    }
+
+    private fun addInverseDependency(property: PropertyData, dependency: PropertyData) {
+        checkBoolean(dependency)
+        property.inverseDependency = true
+        addDependency(property, dependency) { value: Boolean -> value xor property.inverseDependency }
+    }
+
+    private fun checkBoolean(propertyData: PropertyData) {
+        if (propertyData.getDataType() != PropertyType.SWITCH && propertyData.getDataType() != PropertyType.CHECKBOX) {
+            error("Dependency without a specified predicate must be a boolean PropertyType!")
+        }
     }
 
     @Deprecated(
@@ -230,6 +306,8 @@ abstract class Vigilant(
 
     private fun readData() {
         fileConfig.load()
+
+        migrate(fileConfig, migrations)
 
         propertyCollector.getProperties().filter { it.value.writeDataToFile }.forEach {
             val fullPath = it.attributesExt.fullPropertyPath()

@@ -5,6 +5,7 @@ import gg.essential.elementa.constraints.*
 import gg.essential.elementa.dsl.*
 import gg.essential.elementa.state.toConstraint
 import gg.essential.vigilance.data.Category
+import gg.essential.vigilance.data.DividerItem
 import gg.essential.vigilance.data.PropertyItem
 import gg.essential.vigilance.utils.scrollGradient
 
@@ -31,7 +32,7 @@ class SettingsCategory(category: Category) : UIContainer() {
         }
 
         if (category.description != null) {
-            UIWrappedText(category.description, centered = true).constrain {
+            UIWrappedText(category.description, shadowColor = VigilancePalette.getTextShadowLight(), centered = true).constrain {
                 x = CenterConstraint()
                 y = SiblingConstraint(DataBackedSetting.INNER_PADDING)
                 width = 100.percent - (DataBackedSetting.INNER_PADDING * 2f).pixels
@@ -77,6 +78,12 @@ class SettingsCategory(category: Category) : UIContainer() {
                             }
                             dividerItemsSettingsObjects.forEach { divider ->
                                 divider.hideMaybe(hideDividerMaybe(divider))
+                            }
+                            scroller.sortChildren { child ->
+                                category.items.indexOfFirst { categoryItem ->
+                                    (categoryItem is DividerItem && child is Divider && categoryItem.name == child.name)
+                                            || (categoryItem is PropertyItem && child is DataBackedSetting && categoryItem.data == child.data)
+                                }
                             }
                         }
                     }

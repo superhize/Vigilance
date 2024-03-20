@@ -17,14 +17,19 @@ public abstract class gg/essential/vigilance/Vigilant {
 	public fun <init> (Ljava/io/File;Ljava/lang/String;Lgg/essential/vigilance/data/PropertyCollector;Lgg/essential/vigilance/data/SortingBehavior;Lgg/essential/vigilance/i18n/I18nProvider;)V
 	public synthetic fun <init> (Ljava/io/File;Ljava/lang/String;Lgg/essential/vigilance/data/PropertyCollector;Lgg/essential/vigilance/data/SortingBehavior;Lgg/essential/vigilance/i18n/I18nProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun addDependency (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun addDependency (Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun addDependency (Ljava/lang/reflect/Field;Ljava/lang/reflect/Field;)V
+	public final fun addDependency (Ljava/lang/reflect/Field;Ljava/lang/reflect/Field;Lkotlin/jvm/functions/Function1;)V
 	public final fun addDependency (Lkotlin/reflect/KProperty;Lkotlin/reflect/KProperty;)V
+	public final fun addInverseDependency (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun addInverseDependency (Ljava/lang/reflect/Field;Ljava/lang/reflect/Field;)V
 	public final fun category (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun dependsOn (Lkotlin/reflect/KProperty;Lkotlin/reflect/KProperty;)V
 	public final fun getCategories ()Ljava/util/List;
 	public final fun getCategoryFromSearch (Ljava/lang/String;)Lgg/essential/vigilance/data/Category;
 	public final fun getGuiTitle ()Ljava/lang/String;
 	public final fun getI18nProvider ()Lgg/essential/vigilance/i18n/I18nProvider;
+	protected fun getMigrations ()Ljava/util/List;
 	public final fun getSortingBehavior ()Lgg/essential/vigilance/data/SortingBehavior;
 	public final fun gui ()Lgg/essential/vigilance/gui/SettingsGui;
 	public final fun hiddenIf (Lkotlin/reflect/KProperty;Lkotlin/jvm/functions/Function0;)V
@@ -150,6 +155,10 @@ public final class gg/essential/vigilance/data/KPropertyBackedPropertyValue : gg
 public final class gg/essential/vigilance/data/MethodBackedPropertyValue : gg/essential/vigilance/data/CallablePropertyValue {
 	public fun <init> (Ljava/lang/reflect/Method;)V
 	public fun invoke (Lgg/essential/vigilance/Vigilant;)V
+}
+
+public abstract interface class gg/essential/vigilance/data/Migration {
+	public abstract fun apply (Ljava/util/Map;)V
 }
 
 public abstract interface annotation class gg/essential/vigilance/data/Property : java/lang/annotation/Annotation {
@@ -302,16 +311,20 @@ public final class gg/essential/vigilance/data/PropertyData {
 	public final fun getAttributes ()Lgg/essential/vigilance/data/PropertyAttributes;
 	public final fun getAttributesExt ()Lgg/essential/vigilance/data/PropertyAttributesExt;
 	public final fun getDataType ()Lgg/essential/vigilance/data/PropertyType;
+	public final fun getDependencyPredicate ()Lkotlin/jvm/functions/Function1;
 	public final fun getDependsOn ()Lgg/essential/vigilance/data/PropertyData;
 	public final fun getHasDependants ()Z
 	public final fun getInstance ()Lgg/essential/vigilance/Vigilant;
+	public final fun getInverseDependency ()Z
 	public final fun getValue ()Lgg/essential/vigilance/data/PropertyValue;
 	public fun hashCode ()I
 	public final fun isHidden ()Z
 	public final fun setAction (Lkotlin/jvm/functions/Function1;)V
 	public final fun setCallbackConsumer (Ljava/util/function/Consumer;)V
+	public final fun setDependencyPredicate (Lkotlin/jvm/functions/Function1;)V
 	public final fun setDependsOn (Lgg/essential/vigilance/data/PropertyData;)V
 	public final fun setHasDependants (Z)V
+	public final fun setInverseDependency (Z)V
 	public final fun setValue (Ljava/lang/Object;)V
 	public fun toString ()Ljava/lang/String;
 }
@@ -528,9 +541,12 @@ public final class gg/essential/vigilance/gui/VigilancePalette {
 	public final fun getSuccess ()Ljava/awt/Color;
 	public final fun getText ()Ljava/awt/Color;
 	public final fun getTextActive ()Ljava/awt/Color;
+	public final fun getTextActiveShadow ()Ljava/awt/Color;
 	public final fun getTextDisabled ()Ljava/awt/Color;
 	public final fun getTextHighlight ()Ljava/awt/Color;
 	public final fun getTextShadow ()Ljava/awt/Color;
+	public final fun getTextShadowLight ()Ljava/awt/Color;
+	public final fun getTextShadowMid ()Ljava/awt/Color;
 	public final fun getTextWarning ()Ljava/awt/Color;
 	public final fun getTransparent ()Ljava/awt/Color;
 	public final fun getWarning ()Ljava/awt/Color;

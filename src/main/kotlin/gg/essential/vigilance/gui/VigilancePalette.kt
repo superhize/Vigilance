@@ -49,8 +49,11 @@ object VigilancePalette {
     fun getDividerDark(): Color = dividerDark.get()
     fun getScrollbar(): Color = scrollbar.get()
     fun getTextShadow(): Color = textShadow.get()
+    fun getTextShadowLight(): Color = textShadowLight.get()
+    fun getTextShadowMid(): Color = textShadowMid.get()
     fun getMainBackground(): Color = mainBackground.get()
     fun getTextActive(): Color = textActive.get()
+    fun getTextActiveShadow(): Color = textActiveShadow.get()
 
     // These are marked as internal because ideally the user is only changing the colours in the settings gui
     // Old
@@ -94,14 +97,19 @@ object VigilancePalette {
     internal val dividerDark = BasicState(Color.BLACK)
     internal val scrollbar = BasicState(Color.BLACK)
     internal val textShadow = BasicState(Color.BLACK)
+    internal val textShadowLight = BasicState(Color.BLACK)
+    internal val textShadowMid = BasicState(Color.BLACK)
     internal val mainBackground = BasicState(Color.BLACK)
     internal val textActive = BasicState(Color.BLACK)
+    internal val textActiveShadow = BasicState(Color.BLACK)
 
     internal val SEARCH_7X: ImageFactory = ResourceImageFactory("/vigilance/search_7x7.png")
     internal val CANCEL_5X: ImageFactory = ResourceImageFactory("/vigilance/cancel_5x5.png")
     internal val ARROW_LEFT_4X7: ImageFactory = ResourceImageFactory("/vigilance/arrow-left.png")
     internal val ARROW_UP_7X4: ImageFactory = ResourceImageFactory("/vigilance/arrow_up.png")
     internal val ARROW_DOWN_7X4: ImageFactory = ResourceImageFactory("/vigilance/arrow_down.png")
+    internal val TOGGLE_ON_1X5: ImageFactory = ResourceImageFactory("/vigilance/toggle_on.png")
+    internal val TOGGLE_OFF_4X5: ImageFactory = ResourceImageFactory("/vigilance/toggle_off.png")
 
     init {
         VigilanceConfig.setAllInPalette()
